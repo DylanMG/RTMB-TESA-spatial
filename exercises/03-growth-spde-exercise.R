@@ -77,21 +77,21 @@ nll <- function(par) {
 
   # GMRF for k:
   # SPDE-based precision matrix, Q:
-  Q <-  ### Exercise: fill in precision matrix calculation
+  Q <- tau^2 * (kappa^4 * spde$c0 + 2 * kappa^2 * spde$g1 + spde$g2) ### Exercise: fill in precision matrix calculation
 
   # omega: growth rate of length measurement units per year in early life
   # omega = k * L_inf
 
   # random effects likelihood:
-  log_omega %~%  ### Exercise: fill in the GRMF density with mu_log_omega and Q
+  log_omega %~%  dgmrf(mu_log_omega, Q)### Exercise: fill in the GRMF density with mu_log_omega and Q
 
   # project from knots to data locations and exp():
-  omega <- exp() ### Exercise: fill in the bilinear interpolation, to project `log_omega` using `interpolator_data`; wrap it in exp()
+  omega <- exp(interpolator_data %*% log_omega) ### Exercise: fill in the bilinear interpolation, to project `log_omega` using `interpolator_data`; wrap it in exp()
 
   # growth curve
   # Gallucci and Quinn (1979)
   # Cahill et al. 2020 https://doi.org/10.1139/cjfas-2019-0434
-  pred <-  ### Exercise: fill in the growth curve, see the non-spatial growth .R file
+  pred <-  L_inf * (1 - exp(-(omega / L_inf) * (age - t0))) ### Exercise: fill in the growth curve, see the non-spatial growth .R file
 
   # project omega to prediction grid for visualization:
   omega_pred <- exp(interpolator_prediction %*% log_omega)
@@ -104,10 +104,10 @@ nll <- function(par) {
   # derived values:
 
   # distance correlation ~0.1 (p4 in Lindgren et al. 2011):
-  range <-  ### Exercise: fill in range calculation
+  range <-  sqrt(8) / kappa### Exercise: fill in range calculation
   ADREPORT(range)
   # marginal SD (p5 in Lindgren et al. 2011):
-  sigma <-  ### Exercise: fill in SD calculation
+  sigma <-  1 / sqrt(4 * pi * exp(2 * log_tau + 2 * log_kappa))### Exercise: fill in SD calculation
   ADREPORT(sigma)
 }
 
@@ -170,7 +170,7 @@ AIC_non_spatial
 AIC_spatial
 
 # Question: Which model does marginal AIC favour as more parsimonious?
-
+  #Spatial!
 # Question: How similar are the parameter estimates?
 sdrep
 sdrep_non_spatial
@@ -193,10 +193,25 @@ lines(pop$age[o], pred_non_spatial[o], col = "blue", lwd = 2)
 # You made it to the end. Great! Try these extra-credit exercises:
 
 # Extra exercise 1: Check the sensitivity to mesh resolution.
+#when 3: mu_log_omega  1.799196 0.026489490
+#when 1: mu_log_omega  1.796442 0.02679577
+#when 0.1: mu_log_omega  1.795720 0.027008249
+#when 10: mu_log_omega  1.8891175  0.027976104
 
 # Extra exercise 2: How different does the growth curve look with the maximum
 # vs. minimum 'omega' spatially varying values?
+p <- as.list(sdrep, "Estimate") 
+L_inf <- exp(p$log_L_inf)
+t0 <- p$t0
+omega <- exp(p$mu_log_omega)
 
+ages <- seq(min(pop$age), max(pop$age), length.out = 100)
+lengths <- L_inf * (1 - exp(-(omega / L_inf) * (ages - t0)))
+
+plot(pop[, c("age", "length")], col = "#00000010", pch = 19)
+lines(ages, lengths, col = "red", lwd = 2)
+o <- order(pop$age)
+lines(pop$age[o], pred_non_spatial[o], col = "blue", lwd = 2)
 # Extra exercise 3: Try estimating the growth curve and its standard error
 # within the RTMB model. Estimate the curve for the average log_omega
 # (without the random fields included in the prediction). Is this more

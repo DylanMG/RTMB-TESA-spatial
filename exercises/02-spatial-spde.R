@@ -24,7 +24,7 @@ sim_dat <- sdmTMB::sdmTMB_simulate(
   data = d,
   mesh = .mesh,
   range = 0.3,
-  phi = 0.25,
+  phi = 0.25, # sd
   sigma_O = 0.4,
   seed = 123,
   B = 0.2 # intercept
@@ -38,7 +38,7 @@ grid_dat <- sim_dat[(N_POINTS + 1):nrow(sim_dat), ]
 ggplot(grid_dat, aes(X, Y, fill = true)) +
   geom_raster()
 
-# observations
+# observationsSS
 ggplot(sim, aes(X, Y, colour = observed, size = observed)) +
   geom_point()
 
@@ -46,15 +46,16 @@ ggplot(sim, aes(X, Y, colour = observed, size = observed)) +
 
 # make a 2D 'mesh' object:
 mesh <- fmesher::fm_mesh_2d(
-  loc = as.matrix(sim[, c("X", "Y")]),
+  loc = as.matrix(sim[, c("X", "Y")]), #locations of observations
   max.edge = c(0.1, 0.3), # maximum triangle edge length; inside + border
-  cutoff = 0.06 # minimum triangle edge length
+  cutoff = 0.06 # minimum triangle edge length #.06 was init
 )
 
 plot(mesh)
 points(sim[, c("X", "Y")], col = "red", pch = 21, cex = 0.5)
 mesh$n
 mesh$loc
+#mesh$loc[,3] <- rnorm(282, 0, 5) #fuck around with 3rd column
 
 # compute 'finite element' matrices for SPDE approach:
 spde <- fmesher::fm_fem(mesh)
@@ -76,22 +77,22 @@ nrow(interpolator_data)
 
 mesh$n
 ncol(interpolator_data)
-
+if(TRUE){
 interpolator_data[519, ]
 # so, for row of data 519, bilinear interpolation is combination of these vertices:
 vert <- which(interpolator_data[519, ] != 0)
 vert
 interpolator_data[519, vert]
 plot(mesh)
-points(mesh$loc[vert,], col = "blue", pch = 20)
-points(sim[519, c("X", "Y")], col = "red", pch = 20, cex = 0.8)
+points(mesh$loc[vert,], col = "blue", pch = 20) #the 3 non-0's
+points(sim[519, c("X", "Y")], col = "red", pch = 20, cex = 0.8) #and the weighted average of them
 
 # compute bilinear interpolation matrix from mesh to a prediction grid:
 interpolator_prediction <- fmesher::fm_basis(
   mesh,
   loc = as.matrix(prediction_grid[, c("X", "Y")])
 )
-
+} #turn off for experimenting with N
 # RTMB setup  ---------------------------------------------------------------
 
 nll <- function(par) {
@@ -112,7 +113,8 @@ nll <- function(par) {
   # project random effects from vertices to prediction locations:
   predictions <- interpolator_prediction %*% rf
 
-  # ADREPORT(predictions) # slower, but gets you SEs on the prediction grid
+  #can switch between these 2 if you want se(ADREPORT) or not(REPORT)
+   #ADREPORT(predictions) # slower, but gets you SEs on the prediction grid
   REPORT(predictions) # fast!
 
   # derived values
@@ -174,7 +176,7 @@ cowplot::plot_grid(g1, g2, nrow = 1)
 ggplot(grid_dat, aes(true, estimate)) + geom_point() +
   geom_abline(intercept = 0, slope = 1, colour = "red")
 
-if (FALSE) { # only available if ADREPORT(predictions) uncommented
+if(FALSE){ # only available if ADREPORT(predictions) uncommented
   grid_dat$se <- plsd$predictions
   ggplot(grid_dat, aes(X, Y, fill = se)) +
     geom_raster() +
@@ -191,7 +193,7 @@ est <- as.list(sdrep, "Estimate")
 # Discussion:
 # What is est$rf?
 # What are the locations of those values?
-est$rf
+est$rf #values at the knots
 mesh$loc
 mesh$n
 dat <- data.frame(mesh$loc, rf = est$rf)
@@ -224,6 +226,7 @@ pl$sigma
 
 # 1. Experiment with different numbers of data observations and
 #    range sizes.
+  #breaks with 80 obs... 
 # 2. Experiment with different mesh resolutions.
 # 3. Try switching `ADREPORT(predictions)` on to plot SEs in space.
 

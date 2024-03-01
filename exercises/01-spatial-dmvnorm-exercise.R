@@ -11,7 +11,7 @@ theme_set(theme_light())
 
 # Simulate some data --------------------------------------------------------
 
-N_POINTS <- 80
+N_POINTS <- 10
 
 set.seed(123)
 loc <- data.frame(X = runif(N_POINTS), Y = runif(N_POINTS))
@@ -70,7 +70,8 @@ nll <- function(pars) {
       s1 <- dat[i, c("X", "Y")] # grab spatial coordinates
       s2 <- dat[j, c("X", "Y")] # grab spatial coordinates
       d <- sqrt(sum((s1 - s2)^2)) # Euclidean distance
-      correlation_matrix[i, j] <-  ### Exercise: fill in the exponential correlation function (use d and rho)
+      correlation_matrix[i, j] <- exp(-d/rho) ### Exercise: fill in the exponential correlation function (use d and rho)
+      #correlation_matrix[i, j] <- exp(-(d/rho)^2)
     }
   }
   # convert from correlation to covariance matrix:
@@ -78,7 +79,8 @@ nll <- function(pars) {
 
   # random field likelihood:
   rf %~% dmvnorm(mu, covariance_matrix)
-
+  #nll <- 0  #line above is same as these 2 lines, like we been coding all week
+  # nll <- nll - dmvnorm(rf, mu, covariance_matrix, log = TRUE) 
   # data likelihood:
   not_NA <- !is.na(observed) # the NA observed are the grid
   observed[not_NA] %~% dnorm(rf[not_NA], exp(log_sigma))
@@ -102,6 +104,7 @@ sdr_se <- as.list(sdr, "Std. Error")
 # Inspecting the output -----------------------------------------------------
 
 # Question: how sparse or dense is the Hessian?
+  #dense means coding like this is sort of inefficient
 Matrix::image(obj$env$spHess(random = TRUE))
 
 # Our fixed effect estimates:
@@ -140,8 +143,11 @@ prediction_grid |>
 
 # Exercises -----------------------------------------------------------------
 
-# 1. Fill in the exponential correlation and fit the model.
+# 1. Fill in the exponential correlation and fit the model. DONE
 # 2. Try simulating and fitting different sample sizes. How well does this scale?
+  #more data is better!
 # 3. How sparse or dense is the Hessian?
+  #depends on N_obs
 # 4. Discuss why the prediction does or does not match the truth well.
 # 5. Discuss why the standard error is larger in some locations than others.
+  #Seems like there is more error on edges, maybe because 

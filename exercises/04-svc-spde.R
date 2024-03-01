@@ -70,6 +70,7 @@ nll <- function(par) {
   kappa <- exp(log_kappa)
 
   # compute precision matrix Q, e.g. Lindgren + Rue 2015 JSS p4:
+  #2 Qs because of a spatially varying "intercept" and "slope" Q2 is like how pops change through time
   Q1 <- tau[1]^2 * (kappa^4 * spde$c0 + 2 * kappa^2 * spde$g1 + spde$g2)
   Q2 <- tau[2]^2 * (kappa^4 * spde$c0 + 2 * kappa^2 * spde$g1 + spde$g2)
 
