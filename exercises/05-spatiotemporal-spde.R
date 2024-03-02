@@ -43,7 +43,7 @@ nll <- function(par) {
   # compute precision matrix Q, e.g. Lindgren + Rue 2015 JSS p4:
   Q <- tau^2 * (kappa^4 * spde$c0 + 2 * kappa^2 * spde$g1 + spde$g2)
   rf[,1] %~% dgmrf(0, Q)
-  for (i in 2:n_t) {
+  for (i in 2:n_t) { #loop the rows (knots) through years (columns)
     rf[,i] %~% dgmrf(rf[,i-1], Q)
   }
 
@@ -125,7 +125,7 @@ m <- sdmTMB(
 m
 m$sd_report
 tidy(m, "ran_pars", conf.int = TRUE)
-
+sanity(m)
 # Question:
 # What is wrong with our model still?
 plot(r$eta)
