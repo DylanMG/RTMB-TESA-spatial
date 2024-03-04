@@ -145,6 +145,7 @@ m <- sdmTMB(
   time = "year",
   spatial = "on",
   spatiotemporal = "rw",
+  extra_time = c(2006, 2008, 2010, 2012, 2014, 2016),
   mesh = mesh0
 )
 m
@@ -152,3 +153,5 @@ m$sd_report
 tidy(m, "ran_pars", conf.int = TRUE)
 
 plot(r$eta)
+#Matrix::image(obj$env$spHess(random = TRUE))
+
